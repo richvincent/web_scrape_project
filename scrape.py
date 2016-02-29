@@ -2,28 +2,36 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 from datetime import datetime as date
+import click
 from subprocess import call
 
-call(['clear'])
 
-urlbase = 'https://code.djangoproject.com/ticket/'
+def cleanData(inputstring):
+    inputstring = inputstring.replace("']", "")
+    inputstring = inputstring.replace("['", "")
+    return inputstring
 
-rundate = date.now()
 
-filename = "data-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'))
+@click.command()
+@click.option('--start', default=1, help='Starting ticket of scrape')
+@click.option('--stop', default=30000, help='Ending ticket of the scrape')
+def main(start, stop):
+    call(['clear'])
 
-f = open(filename, 'w', newline='')
-writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC, quotechar="'")
+    urlbase = 'https://code.djangoproject.com/ticket/'
 
-response = ''
-ticketnumber = 0
+    rundate = date.now()
 
-if __name__ == '__main__':
-    for ticketnumber in range(26295):
+    ticketnumber = 0
+
+    filename = "data-{}-{}-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'),
+                                          str(start), str(stop))
+    f = open(filename, 'w', newline='')
+    writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC, quotechar="'")
+
+    for ticketnumber in range(start, stop):
 
         r = requests.get("{}{}".format(urlbase, ticketnumber))
-
-        response = str(r)
 
         htmldoc = r.text
 
@@ -34,11 +42,14 @@ if __name__ == '__main__':
         title = title.replace("']", "")
         title = title.replace("['", "")
         title = title.replace("\\n", "")
+        title = title.strip()
+        title = title[:-1]
+        title = title.strip()
 
         try:
             ticketId = str(soup.find("a", {"class": "trac-id"}).contents)
         except AttributeError:
-            ticketId = ticketnumber
+            ticketId = str(ticketnumber)
 
         try:
             user = str(soup.find("td", {"class": "searchable"}).a.contents)
@@ -51,12 +62,22 @@ if __name__ == '__main__':
         except AttributeError:
             ticketType = 'unknown'
 
-        record = (ticketId, user, ticketType)
+        title = cleanData(title)
+        ticketId = cleanData(ticketId)
+        ticketId = ticketId.replace("#", "")
+        user = cleanData(user)
+        ticketType = cleanData(ticketType)
 
-        print("{} | {} | {}".format(ticketId, user, ticketType))
-        print(response)
+        record = (ticketId, user, ticketType, title)
+
+        print("{} | {} | {} | {}".format(ticketId, user, ticketType, title))
 
         writer.writerow(record)
+    else:
+        f.close
+        del f
 
-f.close
-del f
+
+if __name__ == '__main__':
+    call('clear')
+    main()
