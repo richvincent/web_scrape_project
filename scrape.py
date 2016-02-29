@@ -10,51 +10,53 @@ urlbase = 'https://code.djangoproject.com/ticket/'
 
 rundate = date.now()
 
-filename = "scrape-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'))
+filename = "data-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'))
 
 f = open(filename, 'w', newline='')
 writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC, quotechar="'")
 
 response = ''
-firstticket = 0
-while response != '<Response [404]>':
+ticketnumber = 0
 
-    firstticket += 1
+if __name__ == '__main__':
+    for ticketnumber in range(26295):
 
-    r = requests.get("{}{}".format(urlbase, firstticket))
+        r = requests.get("{}{}".format(urlbase, ticketnumber))
 
-    response = str(r)
+        response = str(r)
 
-    htmldoc = r.text
+        htmldoc = r.text
 
-    soup = BeautifulSoup(htmldoc, 'html.parser')
+        soup = BeautifulSoup(htmldoc, 'html.parser')
 
-    title = str(soup.find("title").contents)
-    title = title.replace("Django", "")
-    title = title.replace("']", "")
-    title = title.replace("['", "")
-    title = title.replace("\\n", "")
+        title = str(soup.find("title").contents)
+        title = title.replace("Django", "")
+        title = title.replace("']", "")
+        title = title.replace("['", "")
+        title = title.replace("\\n", "")
 
-    try:
-        ticketId = str(soup.find("a", {"class": "trac-id"}).contents)
-    except AttributeError:
-        ticketId = 'unknown'
+        try:
+            ticketId = str(soup.find("a", {"class": "trac-id"}).contents)
+        except AttributeError:
+            ticketId = ticketnumber
 
-    try:
-        user = str(soup.find("td", {"class": "searchable"}).a.contents)
-    except AttributeError:
-        user = 'unknown'
+        try:
+            user = str(soup.find("td", {"class": "searchable"}).a.contents)
+        except AttributeError:
+            user = 'unknown'
 
-    try:
-        ticketType = str(soup.find("span", {"class": "trac-type"}).a.contents)
-    except AttributeError:
-        ticketType = 'unknown'
+        try:
+            ticketType = str(soup.find("span", {"class":
+                                                "trac-type"}).a.contents)
+        except AttributeError:
+            ticketType = 'unknown'
 
-    record = (ticketId, user, ticketType)
+        record = (ticketId, user, ticketType)
 
-    print(record)
+        print("{} | {} | {}".format(ticketId, user, ticketType))
+        print(response)
 
-    writer.writerow(record)
+        writer.writerow(record)
 
 f.close
 del f
