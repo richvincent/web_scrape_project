@@ -36,10 +36,10 @@ def findNumberOfTickets():
     return numTickets
 
 
-def getListOfTickets():
-    base = baseURL()
-    indexurl = base.indexurl
-    r = requests.get(indexurl)
+def getListOfTickets(url):
+    # base = baseURL()
+    # indexurl = base.indexurl
+    r = requests.get(url)
     htmldoc = r.text
     soup = BeautifulSoup(htmldoc, "html.parser")
     element = soup.find_all("td", class_="id")
@@ -73,59 +73,63 @@ def main():
 
     rundate = date.now()
 
-    tickets = getListOfTickets()
+    urllist = gatherIndexPages()
 
-    filename = "data-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'))
-    f = open(filename, 'w', newline='')
-    writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC, quotechar="'")
+    for url in urllist:
 
-    for ticketnumber in tickets:
-        """ This loop needs to go """
+        tickets = getListOfTickets(url)
 
-        r = requests.get("{}{}".format(urlbase, ticketnumber))
+        filename = "data-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'))
+        f = open(filename, 'w', newline='')
+        writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC, quotechar="'")
 
-        htmldoc = r.text
+        for ticketnumber in tickets:
+            """ This loop needs to go """
 
-        soup = BeautifulSoup(htmldoc, 'html.parser')
+            r = requests.get("{}{}".format(urlbase, ticketnumber))
 
-        title = str(soup.find("title").contents)
-        title = title.replace("Django", "")
-        title = title.replace("']", "")
-        title = title.replace("['", "")
-        title = title.replace("\\n", "")
-        title = title.strip()
-        title = title[:-1]
-        title = title.strip()
+            htmldoc = r.text
 
-        try:
-            ticketId = str(soup.find("a", {"class": "trac-id"}).contents)
-        except AttributeError:
-            ticketId = str(ticketnumber)
+            soup = BeautifulSoup(htmldoc, 'html.parser')
 
-        try:
-            user = str(soup.find("td", {"class": "searchable"}).a.contents)
-        except AttributeError:
-            user = 'unknown'
+            title = str(soup.find("title").contents)
+            title = title.replace("Django", "")
+            title = title.replace("']", "")
+            title = title.replace("['", "")
+            title = title.replace("\\n", "")
+            title = title.strip()
+            title = title[:-1]
+            title = title.strip()
 
-        try:
-            ticketType = str(soup.find("span", {"class":
-                                                "trac-type"}).a.contents)
-        except AttributeError:
-            ticketType = 'unknown'
+            try:
+                ticketId = str(soup.find("a", {"class": "trac-id"}).contents)
+            except AttributeError:
+                ticketId = str(ticketnumber)
 
-        title = cleanData(title)
-        ticketId = cleanData(ticketId)
-        user = cleanData(user)
-        ticketType = cleanData(ticketType)
+            try:
+                user = str(soup.find("td", {"class": "searchable"}).a.contents)
+            except AttributeError:
+                user = 'unknown'
 
-        record = (ticketId, user, ticketType, title)
+            try:
+                ticketType = str(soup.find("span", {"class":
+                                                    "trac-type"}).a.contents)
+            except AttributeError:
+                ticketType = 'unknown'
 
-        print("{} | {} | {} | {}".format(ticketId, user, ticketType, title))
+            title = cleanData(title)
+            ticketId = cleanData(ticketId)
+            user = cleanData(user)
+            ticketType = cleanData(ticketType)
 
-        writer.writerow(record)
-    else:
-        f.close
-        del f
+            record = (ticketId, user, ticketType, title)
+
+            print("{} | {} | {} | {}".format(ticketId, user, ticketType, title))
+
+            writer.writerow(record)
+        else:
+            f.close
+            del f
 
 
 if __name__ == '__main__':
