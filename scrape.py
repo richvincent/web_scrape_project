@@ -6,30 +6,81 @@ import click
 from subprocess import call
 
 
+class baseURL(object):
+    """ Base URLs for Django project """
+    text = 'https://code.djangoproject.com/'
+    indexurl = 'https://code.djangoproject.com/query?status=assigned&status=closed&status=new&max=10000&desc=1&order=id'
+
+
 def cleanData(inputstring):
     inputstring = inputstring.replace("']", "")
     inputstring = inputstring.replace("['", "")
+    inputstring = inputstring.replace("#", "")
+    inputstring = inputstring.replace(")", "")
+    inputstring = inputstring.replace("(", "")
+    inputstring = inputstring.replace("'", "")
     return inputstring
 
 
-@click.command()
-@click.option('--start', default=1, help='Starting ticket of scrape')
-@click.option('--stop', default=30000, help='Ending ticket of the scrape')
-def main(start, stop):
-    call(['clear'])
+def findNumberOfTickets():
+    base = baseURL()
+    indexurl = base.indexurl
+    r = requests.get(indexurl)
+    htmldoc = r.text
+    soup = BeautifulSoup(htmldoc, "html.parser")
+    element = soup.find("span", class_="numresults")
+    string = cleanData(str(element.contents))
+    results = [int(s) for s in string.split() if s.isdigit()]
+    results.sort
+    numTickets = results[-1]
+    return numTickets
 
-    urlbase = 'https://code.djangoproject.com/ticket/'
+
+def getListOfTickets():
+    base = baseURL()
+    indexurl = base.indexurl
+    r = requests.get(indexurl)
+    htmldoc = r.text
+    soup = BeautifulSoup(htmldoc, "html.parser")
+    element = soup.find_all("td", class_="id")
+    ticketList = []
+    for item in element:
+        ticketList.append(cleanData(str(item.a.contents)))
+
+    return ticketList
+
+
+def gatherIndexPages():
+    base = baseURL()
+    indexurl = base.indexurl
+    r = requests.get(indexurl)
+    htmldoc = r.text
+    soup = BeautifulSoup(htmldoc, "html.parser")
+    paging = soup.find("div", class_="paging")
+    paginglinks = paging.find_all("a")
+    pages = []
+    for each in paginglinks:
+        pages.append(base.text+each.get("href"))
+    pages = pages[:-1]
+    pages = [indexurl] + pages
+    return pages
+
+
+def main():
+    base = baseURL()
+
+    urlbase = base.text + 'ticket/'
 
     rundate = date.now()
 
-    ticketnumber = 0
+    tickets = getListOfTickets()
 
-    filename = "data-{}-{}-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'),
-                                          str(start), str(stop))
+    filename = "data-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'))
     f = open(filename, 'w', newline='')
     writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC, quotechar="'")
 
-    for ticketnumber in range(start, stop):
+    for ticketnumber in tickets:
+        """ This loop needs to go """
 
         r = requests.get("{}{}".format(urlbase, ticketnumber))
 
@@ -64,7 +115,6 @@ def main(start, stop):
 
         title = cleanData(title)
         ticketId = cleanData(ticketId)
-        ticketId = ticketId.replace("#", "")
         user = cleanData(user)
         ticketType = cleanData(ticketType)
 
