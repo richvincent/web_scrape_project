@@ -2,8 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 from datetime import datetime as date
-import click
-from subprocess import call
 
 
 class baseURL(object):
@@ -37,8 +35,6 @@ def findNumberOfTickets():
 
 
 def getListOfTickets(url):
-    # base = baseURL()
-    # indexurl = base.indexurl
     r = requests.get(url)
     htmldoc = r.text
     soup = BeautifulSoup(htmldoc, "html.parser")
@@ -67,6 +63,7 @@ def gatherIndexPages():
 
 
 def main():
+
     base = baseURL()
 
     urlbase = base.text + 'ticket/'
@@ -75,16 +72,15 @@ def main():
 
     urllist = gatherIndexPages()
 
+    filename = "data-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'))
+    f = open(filename, 'a', newline='')
+    writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC, quotechar="'")
+    writer.writerow(['title', 'ticketId', 'user', 'ticketType'])
     for url in urllist:
 
         tickets = getListOfTickets(url)
 
-        filename = "data-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'))
-        f = open(filename, 'w', newline='')
-        writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC, quotechar="'")
-
         for ticketnumber in tickets:
-            """ This loop needs to go """
 
             r = requests.get("{}{}".format(urlbase, ticketnumber))
 
@@ -133,5 +129,4 @@ def main():
 
 
 if __name__ == '__main__':
-    call('clear')
     main()
