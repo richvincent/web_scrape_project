@@ -75,11 +75,13 @@ def main():
     filename = "data-{}.csv".format(rundate.strftime('%m-%d-%y-%H%M'))
     f = open(filename, 'a', newline='')
     writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC, quotechar="'")
-    writer.writerow(['title', 'ticketId', 'user', 'ticketType'])
+    writer.writerow(['ticketcount', 'title', 'ticketId', 'user', 'ticketType'])
+
+    ticketcount = 0
+
     for url in urllist:
 
         tickets = getListOfTickets(url)
-        ticketcount = 0
 
         for ticketnumber in tickets:
 
