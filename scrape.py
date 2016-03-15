@@ -17,6 +17,7 @@ def cleanData(inputstring):
     inputstring = inputstring.replace(")", "")
     inputstring = inputstring.replace("(", "")
     inputstring = inputstring.replace("'", "")
+    inputstring = inputstring.replace("\\n", "")
     return inputstring
 
 
@@ -42,7 +43,6 @@ def getListOfTickets(url):
     ticketList = []
     for item in element:
         ticketList.append(cleanData(str(item.a.contents)))
-
     return ticketList
 
 
@@ -79,6 +79,7 @@ def main():
     for url in urllist:
 
         tickets = getListOfTickets(url)
+        ticketcount = 0
 
         for ticketnumber in tickets:
 
@@ -90,17 +91,12 @@ def main():
 
             title = str(soup.find("title").contents)
             title = title.replace("Django", "")
-            title = title.replace("']", "")
-            title = title.replace("['", "")
-            title = title.replace("\\n", "")
+            title = cleanData(title)
             title = title.strip()
             title = title[:-1]
             title = title.strip()
 
-            try:
-                ticketId = str(soup.find("a", {"class": "trac-id"}).contents)
-            except AttributeError:
-                ticketId = str(ticketnumber)
+            ticketId = str(ticketnumber)
 
             try:
                 user = str(soup.find("td", {"class": "searchable"}).a.contents)
@@ -117,15 +113,18 @@ def main():
             ticketId = cleanData(ticketId)
             user = cleanData(user)
             ticketType = cleanData(ticketType)
+            ticketcount += 1
 
-            record = (ticketId, user, ticketType, title)
+            record = (ticketId, user, ticketType, title, ticketcount)
 
-            print("{} | {} | {} | {}".format(ticketId, user, ticketType, title))
+            print("{} | {} | {} | {} | {}".format(ticketcount,
+                                                  ticketId,
+                                                  user, ticketType, title))
 
             writer.writerow(record)
-        else:
-            f.close
-            del f
+    else:
+        f.close
+        del f
 
 
 if __name__ == '__main__':
